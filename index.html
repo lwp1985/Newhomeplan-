@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>換樓財務決策儀表板</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+HK:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blue: #1d4ed8;
+    --blue-light: #eff6ff;
+    --blue-mid: #3b82f6;
+    --emerald: #059669;
+    --emerald-light: #ecfdf5;
+    --rose: #e11d48;
+    --rose-light: #fff1f2;
+    --amber: #d97706;
+    --slate-900: #0f172a;
+    --slate-800: #1e293b;
+    --slate-700: #334155;
+    --slate-500: #64748b;
+    --slate-400: #94a3b8;
+    --slate-200: #e2e8f0;
+    --slate-100: #f1f5f9;
+    --slate-50: #f8fafc;
+    --white: #ffffff;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.05);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.10);
+  }
+
+- { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+font-family: ‘DM Sans’, ‘Noto Sans HK’, sans-serif;
+background: #f0f4ff;
+background-image:
+radial-gradient(ellipse at 20% 0%, rgba(59,130,246,0.10) 0%, transparent 60%),
+radial-gradient(ellipse at 80% 100%, rgba(5,150,105,0.08) 0%, transparent 60%);
+min-height: 100vh;
+color: var(–slate-800);
+padding: 24px 16px 48px;
+}
+
+.container { max-width: 1100px; margin: 0 auto; }
+
+/* ─── Header ─── */
+.header {
+display: flex;
+flex-wrap: wrap;
+align-items: flex-start;
+justify-content: space-between;
+gap: 16px;
+margin-bottom: 28px;
+animation: fadeUp 0.5s ease both;
+}
+
+.header-title {
+display: flex;
+align-items: center;
+gap: 12px;
+}
+
+.header-icon {
+width: 44px; height: 44px;
+background: var(–blue);
+border-radius: 12px;
+display: flex; align-items: center; justify-content: center;
+font-size: 20px;
+flex-shrink: 0;
+}
+
+h1 {
+font-family: ‘DM Serif Display’, serif;
+font-size: 26px;
+color: var(–slate-900);
+line-height: 1.2;
+}
+
+.header-sub { font-size: 13px; color: var(–slate-400); margin-top: 3px; }
+
+.tab-group {
+display: flex;
+background: var(–white);
+border-radius: 14px;
+padding: 4px;
+border: 1px solid var(–slate-200);
+box-shadow: var(–shadow);
+flex-shrink: 0;
+}
+
+.tab-btn {
+padding: 9px 22px;
+border-radius: 10px;
+border: none;
+background: transparent;
+font-family: ‘DM Sans’, sans-serif;
+font-size: 14px;
+font-weight: 600;
+color: var(–slate-500);
+cursor: pointer;
+transition: all 0.2s;
+text-align: center;
+line-height: 1.3;
+}
+
+.tab-btn .tab-sub { display: block; font-size: 10px; font-weight: 400; margin-top: 1px; color: var(–slate-400); }
+.tab-btn.active { background: var(–blue); color: var(–white); box-shadow: 0 2px 10px rgba(29,78,216,0.25); }
+.tab-btn.active .tab-sub { color: rgba(255,255,255,0.65); }
+
+/* ─── Grid ─── */
+.main-grid {
+display: grid;
+grid-template-columns: 300px 1fr;
+gap: 20px;
+margin-bottom: 20px;
+animation: fadeUp 0.5s 0.1s ease both;
+}
+
+/* ─── Cards ─── */
+.card {
+background: var(–white);
+border-radius: var(–radius);
+border: 1px solid var(–slate-100);
+box-shadow: var(–shadow);
+padding: 22px;
+}
+
+.card-title {
+font-size: 11px;
+font-weight: 700;
+text-transform: uppercase;
+letter-spacing: 0.08em;
+color: var(–slate-500);
+margin-bottom: 18px;
+display: flex;
+align-items: center;
+gap: 6px;
+}
+
+/* ─── Controls ─── */
+.controls { display: flex; flex-direction: column; gap: 16px; }
+
+.control-group { display: flex; flex-direction: column; gap: 6px; }
+
+.control-label {
+display: flex;
+justify-content: space-between;
+align-items: center;
+font-size: 12px;
+color: var(–slate-500);
+}
+
+.control-value { font-size: 13px; font-weight: 700; color: var(–blue); }
+.control-value.grey { color: var(–slate-700); }
+
+input[type=range] {
+-webkit-appearance: none;
+appearance: none;
+width: 100%;
+height: 5px;
+border-radius: 3px;
+background: var(–slate-200);
+cursor: pointer;
+outline: none;
+}
+
+input[type=range]::-webkit-slider-thumb {
+-webkit-appearance: none;
+width: 16px; height: 16px;
+border-radius: 50%;
+background: var(–blue);
+box-shadow: 0 0 0 3px rgba(29,78,216,0.15);
+cursor: pointer;
+}
+
+.range-labels {
+display: flex;
+justify-content: space-between;
+font-size: 10px;
+color: var(–slate-300);
+margin-top: 2px;
+}
+
+.input-wrap {
+position: relative;
+}
+
+.input-icon {
+position: absolute;
+left: 10px; top: 50%;
+transform: translateY(-50%);
+font-size: 15px;
+color: var(–amber);
+}
+
+input[type=number], select {
+width: 100%;
+padding: 9px 10px 9px 32px;
+border: 1px solid var(–slate-200);
+border-radius: var(–radius-sm);
+background: var(–slate-50);
+font-family: ‘DM Sans’, sans-serif;
+font-size: 13px;
+color: var(–slate-800);
+outline: none;
+transition: border 0.15s, box-shadow 0.15s;
+}
+
+input[type=number]:focus, select:focus {
+border-color: var(–blue-mid);
+box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+}
+
+select { padding-left: 10px; cursor: pointer; }
+
+.sub-note { font-size: 11px; color: var(–slate-400); margin-top: 4px; }
+.sub-note .accent-green { color: var(–emerald); font-weight: 600; }
+.sub-note .accent-amber { color: var(–amber); font-weight: 600; }
+
+/* ─── Staff Plan card ─── */
+.staff-card {
+background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+border-radius: var(–radius);
+padding: 20px;
+color: white;
+box-shadow: 0 4px 20px rgba(29,78,216,0.3);
+margin-top: 4px;
+}
+
+.staff-card h4 { font-size: 13px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
+
+.staff-rows { display: flex; flex-direction: column; gap: 10px; }
+
+.staff-row {
+display: flex;
+align-items: center;
+justify-content: space-between;
+font-size: 12px;
+color: rgba(255,255,255,0.8);
+}
+
+.staff-row strong { font-size: 18px; font-weight: 800; color: white; }
+.staff-card-footer {
+margin-top: 14px;
+padding-top: 12px;
+border-top: 1px solid rgba(255,255,255,0.2);
+font-size: 11px;
+color: rgba(255,255,255,0.6);
+}
+
+/* ─── KPI row ─── */
+.kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+
+.kpi {
+background: var(–white);
+border-radius: var(–radius-sm);
+border: 1px solid var(–slate-100);
+box-shadow: var(–shadow);
+padding: 16px;
+}
+
+.kpi-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(–slate-400); margin-bottom: 4px; }
+.kpi-val { font-size: 18px; font-weight: 800; color: var(–slate-900); line-height: 1; }
+.kpi-val.blue { color: var(–blue); }
+.kpi-sub { font-size: 10px; color: var(–slate-400); margin-top: 4px; }
+
+/* ─── Hero balance ─── */
+.hero-card {
+border-radius: 20px;
+padding: 28px;
+border: 2px solid;
+margin-bottom: 16px;
+transition: all 0.3s;
+}
+
+.hero-card.surplus { background: linear-gradient(135deg, #ecfdf5 0%, var(–white) 100%); border-color: #a7f3d0; }
+.hero-card.deficit { background: linear-gradient(135deg, #fff1f2 0%, var(–white) 100%); border-color: #fecdd3; }
+
+.hero-top {
+display: flex;
+flex-wrap: wrap;
+justify-content: space-between;
+align-items: flex-start;
+gap: 12px;
+margin-bottom: 20px;
+}
+
+.hero-label { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.hero-label .icon { font-size: 18px; }
+.hero-sub { font-size: 12px; color: var(–slate-500); margin-top: 4px; }
+.hero-amount { font-family: ‘DM Serif Display’, serif; font-size: 38px; font-weight: 400; line-height: 1; }
+.hero-amount.green { color: var(–emerald); }
+.hero-amount.red { color: var(–rose); }
+
+.toggle-breakdown {
+background: none;
+border: none;
+font-size: 11px;
+color: var(–slate-400);
+cursor: pointer;
+display: flex;
+align-items: center;
+gap: 4px;
+padding: 0;
+font-family: ‘DM Sans’, sans-serif;
+transition: color 0.15s;
+margin-bottom: 14px;
+}
+
+.toggle-breakdown:hover { color: var(–slate-700); }
+.toggle-breakdown .arrow { transition: transform 0.2s; display: inline-block; }
+.toggle-breakdown.open .arrow { transform: rotate(180deg); }
+
+.breakdown-grid {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 24px;
+padding-top: 16px;
+border-top: 1px solid var(–slate-200);
+overflow: hidden;
+transition: max-height 0.35s ease, opacity 0.25s ease;
+}
+
+.breakdown-grid.hidden { max-height: 0; opacity: 0; padding-top: 0; border-top: none; }
+.breakdown-grid.visible { max-height: 500px; opacity: 1; }
+
+.breakdown-section h4 {
+font-size: 11px;
+font-weight: 700;
+text-transform: uppercase;
+letter-spacing: 0.07em;
+color: var(–slate-600);
+margin-bottom: 10px;
+display: flex;
+align-items: center;
+gap: 6px;
+}
+
+.bd-row {
+display: flex;
+justify-content: space-between;
+align-items: center;
+padding: 5px 0 5px 10px;
+border-left: 2px solid var(–slate-100);
+font-size: 12px;
+}
+
+.bd-row span:first-child { color: var(–slate-500); }
+.bd-row span:last-child { font-weight: 600; color: var(–slate-700); font-variant-numeric: tabular-nums; }
+.bd-row.green span { color: var(–emerald) !important; font-style: italic; }
+
+.bd-total {
+display: flex;
+justify-content: space-between;
+padding: 8px 0 0;
+margin-top: 6px;
+border-top: 1px solid var(–slate-200);
+font-size: 13px;
+font-weight: 700;
+color: var(–slate-800);
+}
+
+/* ─── Bottom insight cards ─── */
+.insight-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+.insight-card {
+background: var(–white);
+border-radius: var(–radius-sm);
+border: 1px solid var(–slate-100);
+padding: 18px;
+box-shadow: var(–shadow);
+}
+
+.insight-title {
+font-size: 11px;
+font-weight: 700;
+text-transform: uppercase;
+letter-spacing: 0.07em;
+color: var(–slate-500);
+margin-bottom: 12px;
+display: flex;
+align-items: center;
+gap: 5px;
+}
+
+.monthly-rows { display: flex; flex-direction: column; gap: 8px; }
+
+.monthly-row {
+display: flex;
+justify-content: space-between;
+align-items: center;
+font-size: 13px;
+}
+
+.monthly-row span:first-child { color: var(–slate-500); }
+.monthly-row .val { font-weight: 700; font-variant-numeric: tabular-nums; }
+.monthly-row .val.blue { color: var(–blue); }
+.monthly-row .val.orange { color: #ea580c; }
+.monthly-row .val.grey { color: var(–slate-600); }
+.monthly-footer { font-size: 11px; color: var(–slate-400); padding-top: 10px; margin-top: 4px; border-top: 1px solid var(–slate-100); }
+.monthly-footer strong { color: #e11d48; }
+.insight-text { font-size: 12px; color: var(–slate-500); line-height: 1.7; }
+.insight-footer { font-size: 11px; padding-top: 10px; margin-top: 8px; border-top: 1px solid var(–slate-100); display: flex; justify-content: space-between; }
+.insight-footer span:first-child { color: var(–slate-400); }
+.insight-footer strong { color: var(–slate-800); font-variant-numeric: tabular-nums; }
+
+/* ─── Mortgage Table ─── */
+.mortgage-section { animation: fadeUp 0.5s 0.2s ease both; }
+
+.mortgage-header {
+background: var(–white);
+border-radius: var(–radius) var(–radius) 0 0;
+border: 1px solid var(–slate-100);
+border-bottom: none;
+padding: 18px 22px 16px;
+}
+
+.mortgage-header h3 {
+font-size: 14px;
+font-weight: 700;
+color: var(–slate-800);
+display: flex;
+align-items: center;
+gap: 8px;
+}
+
+.mortgage-header p { font-size: 12px; color: var(–slate-400); margin-top: 3px; }
+
+.table-wrap {
+overflow-x: auto;
+background: var(–white);
+border: 1px solid var(–slate-100);
+border-top: none;
+}
+
+table { width: 100%; border-collapse: collapse; min-width: 580px; }
+
+thead tr { background: var(–slate-50); }
+
+th {
+padding: 11px 18px;
+font-size: 11px;
+font-weight: 600;
+text-transform: uppercase;
+letter-spacing: 0.06em;
+color: var(–slate-400);
+text-align: right;
+}
+
+th:first-child { text-align: left; }
+
+tbody tr { border-top: 1px solid var(–slate-50); transition: background 0.15s; }
+tbody tr:hover { background: var(–slate-50); }
+tbody tr.staff-row-bg { background: rgba(59,130,246,0.04); }
+tbody tr.staff-row-bg:hover { background: rgba(59,130,246,0.07); }
+
+td { padding: 14px 18px; font-size: 13px; text-align: right; font-variant-numeric: tabular-nums; }
+td:first-child { text-align: left; }
+
+.plan-name { font-weight: 700; color: var(–slate-800); font-size: 13px; display: flex; align-items: center; gap: 6px; }
+.plan-name.blue { color: var(–blue); }
+.plan-desc { font-size: 11px; color: var(–slate-400); margin-top: 2px; }
+.plan-icon { font-size: 16px; }
+
+.badge {
+display: inline-block;
+font-size: 9px;
+font-weight: 800;
+padding: 2px 6px;
+border-radius: 99px;
+}
+
+.badge.blue-solid { background: var(–blue); color: white; }
+.badge.amber { background: #fef3c7; color: #92400e; }
+.badge.green { background: #d1fae5; color: #065f46; }
+
+.rate-val { font-weight: 800; font-size: 15px; }
+.rate-val.blue { color: var(–blue); }
+.rate-val.orange { color: #ea580c; }
+
+.monthly-val { font-weight: 800; font-size: 15px; }
+.monthly-val.blue { color: var(–blue); }
+
+.vs-staff { font-size: 10px; color: #e11d48; margin-top: 2px; }
+
+.table-footer {
+background: var(–slate-50);
+border: 1px solid var(–slate-100);
+border-top: none;
+border-radius: 0 0 var(–radius) var(–radius);
+padding: 11px 22px;
+font-size: 11px;
+color: var(–slate-400);
+}
+
+/* ─── Page footer ─── */
+.page-footer {
+text-align: center;
+font-size: 11px;
+color: var(–slate-400);
+margin-top: 28px;
+padding-top: 20px;
+border-top: 1px solid var(–slate-200);
+animation: fadeUp 0.5s 0.3s ease both;
+}
+
+/* ─── Animations ─── */
+@keyframes fadeUp {
+from { opacity: 0; transform: translateY(16px); }
+to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 900px) {
+.main-grid { grid-template-columns: 1fr; }
+.kpi-row { grid-template-columns: 1fr 1fr; }
+.insight-row { grid-template-columns: 1fr; }
+.breakdown-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 500px) {
+.kpi-row { grid-template-columns: 1fr; }
+.hero-top { flex-direction: column; }
+.hero-amount { font-size: 28px; }
+h1 { font-size: 21px; }
+}
+</style>
+
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+
+  <div class="header">
+    <div class="header-title">
+      <div class="header-icon">🏠</div>
+      <div>
+        <h1>換樓財務決策儀表板</h1>
+        <div class="header-sub">Staff Plan vs 市場按揭方案 · 全面資金流分析</div>
+      </div>
+    </div>
+    <div class="tab-group">
+      <button class="tab-btn active" id="tab-now" onclick="setScenario('now')">
+        ⚡ 立刻行動
+        <span class="tab-sub">現況</span>
+      </button>
+      <button class="tab-btn" id="tab-oneYear" onclick="setScenario('oneYear')">
+        ⏳ 一年後換
+        <span class="tab-sub">+22萬現金</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Grid -->
+
+  <div class="main-grid">
+
+```
+<!-- Left: Controls -->
+<div>
+  <div class="card">
+    <div class="card-title">⚙️ 模擬參數</div>
+    <div class="controls">
+
+      <div class="control-group">
+        <div class="control-label">
+          <span>目標樓價（一手樓）</span>
+          <span class="control-value" id="targetPriceDisplay">HK$8,500,000</span>
+        </div>
+        <input type="range" id="targetPrice" min="7000000" max="10000000" step="100000" value="8500000" oninput="update()">
+        <div class="range-labels"><span>700萬</span><span>1000萬</span></div>
+      </div>
+
+      <div class="control-group">
+        <div class="control-label">
+          <span>現有物業預計售價</span>
+          <span class="control-value grey" id="sellPriceDisplay">HK$5,900,000</span>
+        </div>
+        <input type="range" id="sellPrice" min="5500000" max="6500000" step="50000" value="5900000" oninput="update()">
+        <div class="range-labels"><span>550萬</span><span>650萬</span></div>
+      </div>
+
+      <div class="control-group">
+        <div class="control-label"><span>金價預測（每克 HKD）</span></div>
+        <div class="input-wrap">
+          <span class="input-icon">🥇</span>
+          <input type="number" id="goldPrice" value="1058" oninput="update()" style="padding-left:32px">
+        </div>
+        <div class="sub-note">400克總值：<span class="accent-amber" id="goldTotal">HK$423,200</span></div>
+      </div>
+
+      <div class="control-group">
+        <div class="control-label"><span>一手樓回佣預估</span></div>
+        <select id="rebateRate" onchange="update()">
+          <option value="0">0%（無回佣）</option>
+          <option value="1">1.0%</option>
+          <option value="1.5" selected>1.5%（常見優質）</option>
+          <option value="2">2.0%（進取）</option>
+        </select>
+        <div class="sub-note">預計到手：<span class="accent-green" id="rebateDisplay">+HK$127,500</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Staff Plan card -->
+  <div class="staff-card" style="margin-top:16px">
+    <h4>⚡ Staff Plan 核心優勢</h4>
+    <div class="staff-rows">
+      <div class="staff-row">
+        <span>利率鎖定</span>
+        <strong>0.8%</strong>
+      </div>
+      <div class="staff-row">
+        <span>月供中約還本比例</span>
+        <strong>~85%</strong>
+      </div>
+      <div class="staff-row">
+        <span>vs 市場計劃每月慳</span>
+        <strong id="staffSavings">-</strong>
+      </div>
+    </div>
+    <div class="staff-card-footer">30 年期總利息節省估計 <strong id="totalSavings" style="color:white">-</strong></div>
+  </div>
+</div>
+
+<!-- Right: Results -->
+<div>
+
+  <!-- KPIs -->
+  <div class="kpi-row">
+    <div class="kpi">
+      <div class="kpi-label">舊屋套現淨值</div>
+      <div class="kpi-val" id="kpiNet">-</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">總可用資金</div>
+      <div class="kpi-val" id="kpiTotal">-</div>
+      <div class="kpi-sub">現金 + 黃金 + 套現</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Staff Plan 月供</div>
+      <div class="kpi-val blue" id="kpiMonthly">-</div>
+      <div class="kpi-sub" id="kpiMonthlySub">vs 市場 -</div>
+    </div>
+  </div>
+
+  <!-- Hero Balance -->
+  <div class="hero-card surplus" id="heroCard">
+    <div class="hero-top">
+      <div>
+        <div class="hero-label" id="heroLabel"><span class="icon">✅</span> 資金充裕，可以行動</div>
+        <div class="hero-sub">首期 + 印花稅 + 雜費，扣除回佣後預計餘額</div>
+      </div>
+      <div class="hero-amount green" id="heroAmount">-</div>
+    </div>
+
+    <button class="toggle-breakdown open" id="toggleBtn" onclick="toggleBreakdown()">
+      <span class="arrow">▾</span> 收起詳細資金流
+    </button>
+
+    <div class="breakdown-grid visible" id="breakdownGrid">
+      <div class="breakdown-section">
+        <h4>💰 資金來源</h4>
+        <div class="bd-row"><span>舊屋套現（扣代理費＋律師費）</span><span id="bdNetSale">-</span></div>
+        <div class="bd-row"><span>現有流動現金</span><span id="bdCash">-</span></div>
+        <div class="bd-row"><span id="bdGoldLabel">黃金現值（400g）</span><span id="bdGold">-</span></div>
+        <div class="bd-total"><span>資金合計</span><span id="bdTotalAssets">-</span></div>
+      </div>
+      <div class="breakdown-section">
+        <h4>📤 換樓開支</h4>
+        <div class="bd-row"><span>30% 首期</span><span id="bdDown">-</span></div>
+        <div class="bd-row"><span>從價印花稅</span><span id="bdStamp">-</span></div>
+        <div class="bd-row"><span>律師費（估算）</span><span>HK$15,000</span></div>
+        <div class="bd-row green"><span id="bdRebateLabel">一手回佣 1.5%（預估）</span><span id="bdRebate">-</span></div>
+        <div class="bd-total"><span>淨需現金</span><span id="bdNetCost">-</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Insights -->
+  <div class="insight-row">
+    <div class="insight-card">
+      <div class="insight-title">💵 月供對比</div>
+      <div class="monthly-rows">
+        <div class="monthly-row">
+          <span>現有月供</span>
+          <span class="val grey">HK$14,600</span>
+        </div>
+        <div class="monthly-row">
+          <span>Staff Plan (0.8%)</span>
+          <span class="val blue" id="insightStaff">-</span>
+        </div>
+        <div class="monthly-row">
+          <span>H/P 計劃 (~3.1%)</span>
+          <span class="val orange" id="insightBank">-</span>
+        </div>
+      </div>
+      <div class="monthly-footer">
+        Staff vs 市場計劃差距：<strong id="insightDiff">-</strong>/月
+      </div>
+    </div>
+
+    <div class="insight-card">
+      <div class="insight-title">🕐 時機分析</div>
+      <div class="insight-text" id="insightText">-</div>
+      <div class="insight-footer">
+        <span>月供增加（vs 現有）</span>
+        <strong id="insightIncrease">-</strong>
+      </div>
+    </div>
+  </div>
+
+</div>
+```
+
+  </div>
+
+  <!-- Mortgage Comparison Table -->
+
+  <div class="mortgage-section">
+    <div class="mortgage-header">
+      <h3>⇄ 按揭方案比較（以目標樓價即時計算）</h3>
+      <p>四種主要方案首期及月供對照，年期 30 年</p>
+    </div>
+    <div class="table-wrap">
+      <table id="mortgageTable">
+        <thead>
+          <tr>
+            <th>方案</th>
+            <th>年息</th>
+            <th>成數</th>
+            <th>首期</th>
+            <th>月供</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Populated by JS -->
+        </tbody>
+      </table>
+    </div>
+    <div class="table-footer">
+      * H 計劃以 HIBOR 2.15% 估算；P 計劃以最優惠利率 5.625% 計算；MIP 需額外按保費（約 0.5–1.5%）。實際批核視乎壓力測試結果。
+    </div>
+  </div>
+
+  <div class="page-footer">
+    ⚠️ 以上計算僅供參考。印花稅、估價及回佣均為預算數值。H 計劃以 HIBOR 2.15% 估算；P 計劃以 5.625% 計算。實際操作請以銀行最終批核及律師樓文件為準。
+  </div>
+</div>
+
+<script>
+  // ─── State ───────────────────────────────────────────────────────────────
+  let state = {
+    scenario: 'now',
+    targetPrice: 8500000,
+    sellPrice: 5900000,
+    goldPrice: 1058,
+    rebateRate: 1.5,
+    showBreakdown: true,
+  };
+
+  // ─── Constants ────────────────────────────────────────────────────────────
+  const GOLD_WEIGHT = 400;
+  const STAFF_RATE = 0.008;
+  const BANK_RATE = 0.03125; // P-2.5%
+  const TENURE = 30;
+  const CURRENT_MONTHLY = 14600;
+
+  const SCENARIOS = {
+    now:     { loan: 3920000, cash: 500000 },
+    oneYear: { loan: 3800000, cash: 600000 },
+  };
+
+  const PLANS = [
+    { name: 'Staff Plan',        desc: '最優惠息率，本金還款效率極高',            rate: 0.008,   ltv: 70, badge: '推薦', badgeClass: 'blue-solid', icon: '⚡', isStaff: true },
+    { name: 'H + 按揭計劃',      desc: 'HIBOR(2.15%) + 1%，封頂 P-2.5%',         rate: 0.0315,  ltv: 60, badge: 'HIBOR掛鈎', badgeClass: 'amber', icon: '📈', isStaff: false },
+    { name: 'P - 按揭計劃',      desc: '最優惠利率 5.625% - 2.5% = 3.125%',      rate: 0.03125, ltv: 60, badge: '最優惠利率', badgeClass: 'amber', icon: '🏦', isStaff: false },
+    { name: '按揭保險計劃 (MIP)', desc: '最高 80% 按揭（需購買按保），適合首置', rate: 0.033,   ltv: 80, badge: '高成數', badgeClass: 'green', icon: '🛡️', isStaff: false },
+  ];
+
+  // ─── Utils ────────────────────────────────────────────────────────────────
+  const fmt = (v) => new Intl.NumberFormat('zh-HK', {
+    style: 'currency', currency: 'HKD', maximumFractionDigits: 0
+  }).format(v);
+
+  const pmt = (principal, annualRate, years) => {
+    const r = annualRate / 12, n = years * 12;
+    if (r === 0) return principal / n;
+    return (principal * r) / (1 - Math.pow(1 + r, -n));
+  };
+
+  const calcStampDuty = (price) => {
+    if (price <= 3000000) return 100;
+    if (price <= 4524350) return price * 0.015;
+    if (price <= 6640000) return price * 0.0225;
+    if (price <= 9000000) return price * 0.03;
+    return price * 0.0375;
+  };
+
+  const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+
+  // ─── Compute ─────────────────────────────────────────────────────────────
+  function compute() {
+    const { scenario, targetPrice, sellPrice, goldPrice, rebateRate } = state;
+    const { loan: currentLoan, cash: currentCash } = SCENARIOS[scenario];
+
+    const agentFeeSell = sellPrice * 0.01;
+    const legalFeeSell = 10000;
+    const netFromSale = sellPrice - currentLoan - agentFeeSell - legalFeeSell;
+    const goldValue = GOLD_WEIGHT * goldPrice;
+    const totalAssets = netFromSale + currentCash + goldValue;
+
+    const downPayment = targetPrice * 0.3;
+    const newLoan = targetPrice * 0.7;
+    const stampDuty = calcStampDuty(targetPrice);
+    const legalFeeBuy = 15000;
+    const totalPurchaseCost = downPayment + stampDuty + legalFeeBuy;
+    const developerRebate = targetPrice * (rebateRate / 100);
+    const finalBalance = (totalAssets - totalPurchaseCost) + developerRebate;
+
+    const staffMonthly = pmt(newLoan, STAFF_RATE, TENURE);
+    const bankMonthly = pmt(targetPrice * 0.6, BANK_RATE, TENURE);
+
+    return {
+      netFromSale, goldValue, totalAssets, currentCash,
+      downPayment, stampDuty, totalPurchaseCost,
+      developerRebate, finalBalance,
+      staffMonthly, bankMonthly, newLoan, targetPrice,
+    };
+  }
+
+  // ─── Render ───────────────────────────────────────────────────────────────
+  function render() {
+    const r = compute();
+    const surplus = r.finalBalance >= 0;
+
+    // Controls display
+    set('targetPriceDisplay', fmt(state.targetPrice));
+    set('sellPriceDisplay', fmt(state.sellPrice));
+    set('goldTotal', fmt(GOLD_WEIGHT * state.goldPrice));
+    set('rebateDisplay', '+' + fmt(r.developerRebate));
+
+    // Staff card
+    const staffVsBank = r.bankMonthly - r.staffMonthly;
+    set('staffSavings', fmt(staffVsBank) + '/月');
+    set('totalSavings', fmt(staffVsBank * 360));
+
+    // KPIs
+    set('kpiNet', fmt(r.netFromSale));
+    set('kpiTotal', fmt(r.totalAssets));
+    set('kpiMonthly', fmt(r.staffMonthly));
+    set('kpiMonthlySub', 'vs 市場 ' + fmt(r.bankMonthly));
+
+    // Hero
+    const heroCard = document.getElementById('heroCard');
+    heroCard.className = 'hero-card ' + (surplus ? 'surplus' : 'deficit');
+    set('heroLabel', (surplus ? '✅' : '⚠️') + (surplus ? ' 資金充裕，可以行動' : ' 仍有資金缺口'));
+    document.getElementById('heroLabel').innerHTML =
+      '<span class="icon">' + (surplus ? '✅' : '⚠️') + '</span> ' +
+      (surplus ? '資金充裕，可以行動' : '仍有資金缺口');
+    const heroAmount = document.getElementById('heroAmount');
+    heroAmount.textContent = fmt(r.finalBalance);
+    heroAmount.className = 'hero-amount ' + (surplus ? 'green' : 'red');
+
+    // Breakdown
+    set('bdNetSale', fmt(r.netFromSale));
+    set('bdCash', fmt(r.currentCash));
+    set('bdGoldLabel', `黃金現值（${GOLD_WEIGHT}g × $${state.goldPrice}）`);
+    set('bdGold', fmt(r.goldValue));
+    set('bdTotalAssets', fmt(r.totalAssets));
+    set('bdDown', fmt(r.downPayment));
+    set('bdStamp', fmt(r.stampDuty));
+    set('bdRebateLabel', `一手回佣 ${state.rebateRate}%（預估）`);
+    set('bdRebate', '+' + fmt(r.developerRebate));
+    set('bdNetCost', fmt(r.totalPurchaseCost - r.developerRebate));
+
+    // Insights
+    set('insightStaff', fmt(r.staffMonthly));
+    set('insightBank', fmt(r.bankMonthly));
+    set('insightDiff', fmt(r.bankMonthly - r.staffMonthly));
+    set('insightIncrease', fmt(r.staffMonthly - CURRENT_MONTHLY) + '/月');
+
+    const insightText = state.scenario === 'now'
+      ? '【立刻換】金價高位套現機會，及早入住三房。回佣可抵銷印花稅大部分，資金缺口可控。'
+      : '【一年後換】0.8% 低息下一年約還本 12 萬，加上多儲 10 萬現金，資金儲備增加約 22 萬，換樓餘裕更足。';
+    set('insightText', insightText);
+
+    // Mortgage table
+    renderMortgageTable(r.targetPrice, r.staffMonthly);
+  }
+
+  function renderMortgageTable(targetPrice, staffMonthly) {
+    const tbody = document.querySelector('#mortgageTable tbody');
+    tbody.innerHTML = PLANS.map(plan => {
+      const loanAmt = targetPrice * (plan.ltv / 100);
+      const monthly = pmt(loanAmt, plan.rate, TENURE);
+      const down = targetPrice - loanAmt;
+      const diff = monthly - staffMonthly;
+      return `
+        <tr class="${plan.isStaff ? 'staff-row-bg' : ''}">
+          <td>
+            <div class="plan-name ${plan.isStaff ? 'blue' : ''}">
+              <span class="plan-icon">${plan.icon}</span>
+              ${plan.name}
+              <span class="badge ${plan.badgeClass}">${plan.badge}</span>
+            </div>
+            <div class="plan-desc">${plan.desc}</div>
+          </td>
+          <td><span class="rate-val ${plan.isStaff ? 'blue' : 'orange'}">${(plan.rate * 100).toFixed(3)}%</span></td>
+          <td><span class="badge ${plan.isStaff ? 'blue-solid' : 'amber'}">${plan.ltv}%</span></td>
+          <td>${fmt(down)}</td>
+          <td>
+            <div class="monthly-val ${plan.isStaff ? 'blue' : ''}">${fmt(monthly)}</div>
+            ${!plan.isStaff ? `<div class="vs-staff">+${fmt(diff)} vs Staff</div>` : ''}
+          </td>
+        </tr>`;
+    }).join('');
+  }
+
+  // ─── Event handlers ───────────────────────────────────────────────────────
+  function update() {
+    state.targetPrice = +document.getElementById('targetPrice').value;
+    state.sellPrice   = +document.getElementById('sellPrice').value;
+    state.goldPrice   = +document.getElementById('goldPrice').value;
+    state.rebateRate  = +document.getElementById('rebateRate').value;
+    render();
+  }
+
+  function setScenario(s) {
+    state.scenario = s;
+    document.getElementById('tab-now').classList.toggle('active', s === 'now');
+    document.getElementById('tab-oneYear').classList.toggle('active', s === 'oneYear');
+    render();
+  }
+
+  function toggleBreakdown() {
+    state.showBreakdown = !state.showBreakdown;
+    const grid = document.getElementById('breakdownGrid');
+    const btn  = document.getElementById('toggleBtn');
+    grid.className = 'breakdown-grid ' + (state.showBreakdown ? 'visible' : 'hidden');
+    btn.className  = 'toggle-breakdown ' + (state.showBreakdown ? 'open' : '');
+    btn.innerHTML  = '<span class="arrow">▾</span> ' + (state.showBreakdown ? '收起詳細資金流' : '展開詳細資金流');
+  }
+
+  // ─── Init ─────────────────────────────────────────────────────────────────
+  render();
+</script>
+
+</body>
+</html>
