@@ -1,0 +1,496 @@
+import React, { useState, useMemo } from ‘react’;
+import {
+TrendingUp, Home, Coins, Calculator, AlertCircle, CheckCircle2,
+ArrowRightLeft, DollarSign, Clock, ChevronDown, Info, Zap, Shield
+} from ‘lucide-react’;
+
+// ─── Utility ────────────────────────────────────────────────────────────────
+const fmt = (val) =>
+new Intl.NumberFormat(‘zh-HK’, {
+style: ‘currency’, currency: ‘HKD’, maximumFractionDigits: 0,
+}).format(val);
+
+const pmt = (principal, annualRate, years) => {
+const r = annualRate / 12;
+const n = years * 12;
+if (r === 0) return principal / n;
+return (principal * r) / (1 - Math.pow(1 + r, -n));
+};
+
+const calcStampDuty = (price) => {
+if (price <= 3000000) return 100;
+if (price <= 4524350) return price * 0.015;
+if (price <= 6640000) return price * 0.0225;
+if (price <= 9000000) return price * 0.03;
+return price * 0.0375;
+};
+
+// ─── Sub-components ──────────────────────────────────────────────────────────
+const Pill = ({ children, color = ‘blue’ }) => {
+const map = {
+blue: ‘bg-blue-100 text-blue-700’,
+green: ‘bg-emerald-100 text-emerald-700’,
+amber: ‘bg-amber-100 text-amber-700’,
+rose: ‘bg-rose-100 text-rose-700’,
+};
+return (
+<span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${map[color]}`}>
+{children}
+</span>
+);
+};
+
+const Stat = ({ label, value, sub, accent = false }) => (
+
+  <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+    <div className="text-xs text-slate-400 mb-1 uppercase tracking-wide">{label}</div>
+    <div className={`text-xl font-bold leading-tight ${accent ? 'text-blue-600' : 'text-slate-900'}`}>{value}</div>
+    {sub && <div className="text-xs text-slate-400 mt-1">{sub}</div>}
+  </div>
+);
+
+const Row = ({ label, value, highlight, indent }) => (
+
+  <div className={`flex justify-between items-center py-1.5 text-sm ${indent ? 'pl-3 border-l-2 border-slate-100' : ''}`}>
+    <span className={`text-slate-500 ${highlight ? 'text-emerald-600 font-medium italic' : ''}`}>{label}</span>
+    <span className={`font-semibold tabular-nums ${highlight ? 'text-emerald-600' : 'text-slate-700'}`}>{value}</span>
+  </div>
+);
+
+// ─── Mortgage Comparison Table ────────────────────────────────────────────────
+const MortgageComparison = ({ newLoan, targetPrice }) => {
+const plans = [
+{
+name: ‘銀行 Staff Plan’,
+tag: ‘員工專享’,
+tagColor: ‘blue’,
+rate: 0.008,
+ltv: 70,
+desc: ‘最優惠息率，本金還款效率極高’,
+badge: ‘推薦’,
+icon: <Zap className="w-4 h-4 text-blue-500" />,
+},
+{
+name: ‘H + 按揭計劃’,
+tag: ‘HIBOR掛鈎’,
+tagColor: ‘amber’,
+rate: 0.0315, // H(~2.15%) + 1%
+ltv: 60,
+desc: ‘HIBOR + 1%，封頂 P-2.5%（約 3.125%）’,
+badge: null,
+icon: <TrendingUp className="w-4 h-4 text-amber-500" />,
+},
+{
+name: ‘P - 按揭計劃’,
+tag: ‘最優惠利率’,
+tagColor: ‘amber’,
+rate: 0.03125, // P(5.625%) - 2.5%
+ltv: 60,
+desc: ‘最優惠利率 P(5.625%) - 2.5% = 3.125%’,
+badge: null,
+icon: <Shield className="w-4 h-4 text-orange-400" />,
+},
+{
+name: ‘按揭保險計劃 (MIP)’,
+tag: ‘高成數’,
+tagColor: ‘green’,
+rate: 0.033,
+ltv: 80,
+desc: ‘最高 80% 按揭（需購買按保），適合首置’,
+badge: null,
+icon: <Shield className="w-4 h-4 text-emerald-500" />,
+},
+];
+
+return (
+<div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+<div className="px-6 py-4 border-b border-slate-100">
+<h3 className="font-bold text-slate-800 flex items-center gap-2">
+<ArrowRightLeft className="w-4 h-4 text-blue-500" /> 按揭方案比較（{fmt(targetPrice)} 物業）
+</h3>
+<p className="text-xs text-slate-400 mt-0.5">以目標樓價計算首期及月供，年期 30 年</p>
+</div>
+<div className="overflow-x-auto">
+<table className="w-full text-sm">
+<thead>
+<tr className="bg-slate-50">
+<th className="text-left px-5 py-3 text-slate-500 font-medium">方案</th>
+<th className="text-right px-4 py-3 text-slate-500 font-medium">年息</th>
+<th className="text-right px-4 py-3 text-slate-500 font-medium">成數</th>
+<th className="text-right px-4 py-3 text-slate-500 font-medium">首期</th>
+<th className="text-right px-5 py-3 text-slate-500 font-medium">月供</th>
+</tr>
+</thead>
+<tbody className="divide-y divide-slate-50">
+{plans.map((p, i) => {
+const loanAmt = targetPrice * (p.ltv / 100);
+const monthly = pmt(loanAmt, p.rate, 30);
+const down = targetPrice - loanAmt;
+const isStaff = i === 0;
+return (
+<tr key={i} className={`transition-colors hover:bg-slate-50 ${isStaff ? 'bg-blue-50/40' : ''}`}>
+<td className="px-5 py-4">
+<div className="flex items-center gap-2">
+{p.icon}
+<div>
+<div className="font-semibold text-slate-800 flex items-center gap-2">
+{p.name}
+{p.badge && (
+<span className="text-[10px] font-bold bg-blue-600 text-white px-1.5 py-0.5 rounded-full">
+{p.badge}
+</span>
+)}
+</div>
+<div className="text-xs text-slate-400 mt-0.5">{p.desc}</div>
+</div>
+</div>
+</td>
+<td className="px-4 py-4 text-right">
+<span className={`font-bold tabular-nums ${isStaff ? 'text-blue-600' : 'text-slate-700'}`}>
+{(p.rate * 100).toFixed(3)}%
+</span>
+</td>
+<td className="px-4 py-4 text-right">
+<Pill color={isStaff ? ‘blue’ : ‘amber’}>{p.ltv}%</Pill>
+</td>
+<td className="px-4 py-4 text-right tabular-nums text-slate-700 font-medium">{fmt(down)}</td>
+<td className="px-5 py-4 text-right">
+<span className={`font-bold tabular-nums text-base ${isStaff ? 'text-blue-600' : 'text-slate-800'}`}>
+{fmt(monthly)}
+</span>
+{i > 0 && (
+<div className="text-xs text-rose-400 mt-0.5">
++{fmt(monthly - pmt(targetPrice * 0.7, 0.008, 30))} vs Staff
+</div>
+)}
+</td>
+</tr>
+);
+})}
+</tbody>
+</table>
+</div>
+<div className="px-5 py-3 bg-slate-50 border-t border-slate-100">
+<p className="text-xs text-slate-400">
+* H 計劃以 HIBOR 2.15% 估算；P 計劃以最優惠利率 5.625% 計算；MIP 需額外保費（約 0.5–1.5%）。實際批核視乎壓力測試結果。
+</p>
+</div>
+</div>
+);
+};
+
+// ─── Main App ─────────────────────────────────────────────────────────────────
+export default function App() {
+const [scenario, setScenario] = useState(‘now’);
+const [targetPrice, setTargetPrice] = useState(8500000);
+const [sellPrice, setSellPrice] = useState(5900000);
+const [goldPrice, setGoldPrice] = useState(1058);
+const [rebateRate, setRebateRate] = useState(1.5);
+const [showBreakdown, setShowBreakdown] = useState(true);
+
+const currentLoan = scenario === ‘now’ ? 3920000 : 3800000;
+const currentCash = scenario === ‘now’ ? 500000 : 600000;
+const goldWeight = 400;
+const currentMonthly = 14600;
+
+const r = useMemo(() => {
+const agentFeeSell = sellPrice * 0.01;
+const legalFeeSell = 10000;
+const netFromSale = sellPrice - currentLoan - agentFeeSell - legalFeeSell;
+const goldValue = goldWeight * goldPrice;
+const totalAssets = netFromSale + currentCash + goldValue;
+
+```
+const downPayment = targetPrice * 0.3;
+const newLoan = targetPrice * 0.7;
+const stampDuty = calcStampDuty(targetPrice);
+const legalFeeBuy = 15000;
+const totalPurchaseCost = downPayment + stampDuty + legalFeeBuy;
+const developerRebate = targetPrice * (rebateRate / 100);
+const gap = totalAssets - totalPurchaseCost;
+const finalBalance = gap + developerRebate;
+const newMonthlyPayment = pmt(newLoan, 0.008, 30);
+const bankMonthlyPayment = pmt(targetPrice * 0.6, 0.03125, 30); // P-plan, 60%
+
+return {
+  netFromSale, goldValue, totalAssets,
+  downPayment, stampDuty, totalPurchaseCost,
+  developerRebate, gap, finalBalance,
+  newMonthlyPayment, bankMonthlyPayment, newLoan,
+};
+```
+
+}, [scenario, targetPrice, sellPrice, goldPrice, rebateRate, currentLoan, currentCash]);
+
+const surplus = r.finalBalance >= 0;
+
+return (
+<div
+className=“min-h-screen p-4 md:p-8”
+style={{
+background: ‘linear-gradient(135deg, #f0f4ff 0%, #f8faff 50%, #eef6f2 100%)’,
+fontFamily: “‘DM Sans’, ‘Noto Sans HK’, sans-serif”,
+}}
+>
+<style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Noto+Sans+HK:wght@400;500;700&display=swap'); input[type=range] { accent-color: #2563eb; } .tab-active { box-shadow: 0 2px 8px rgba(37,99,235,0.18); }`}</style>
+
+```
+  <div className="max-w-6xl mx-auto space-y-6">
+
+    {/* ── Header ── */}
+    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-8 h-8 bg-blue-600 rounded-xl flex items-center justify-center">
+            <Home className="w-4 h-4 text-white" />
+          </div>
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">換樓財務決策儀表板</h1>
+        </div>
+        <p className="text-slate-400 text-sm pl-10">Staff Plan vs 市場按揭方案 · 全面資金流分析</p>
+      </div>
+
+      <div className="flex bg-white rounded-2xl p-1 border border-slate-100 shadow-sm self-start md:self-auto">
+        {[
+          { key: 'now', label: '⚡ 立刻行動', sub: '現況' },
+          { key: 'oneYear', label: '⏳ 一年後換', sub: '+22萬現金' },
+        ].map(({ key, label, sub }) => (
+          <button
+            key={key}
+            onClick={() => setScenario(key)}
+            className={`px-5 py-2.5 rounded-xl font-semibold text-sm transition-all ${
+              scenario === key
+                ? 'bg-blue-600 text-white tab-active'
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            {label}
+            <span className={`block text-[10px] font-normal mt-0.5 ${scenario === key ? 'text-blue-200' : 'text-slate-400'}`}>
+              {sub}
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+
+    {/* ── Main Grid ── */}
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      {/* Controls */}
+      <div className="space-y-4">
+        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+          <h3 className="font-bold text-slate-800 mb-5 flex items-center gap-2 text-sm uppercase tracking-wider">
+            <Calculator className="w-4 h-4 text-blue-500" /> 模擬參數
+          </h3>
+          <div className="space-y-5">
+
+            <div>
+              <div className="flex justify-between items-center mb-1.5">
+                <label className="text-xs text-slate-500">目標樓價（一手樓）</label>
+                <span className="font-bold text-blue-600 text-sm">{fmt(targetPrice)}</span>
+              </div>
+              <input type="range" min="7000000" max="10000000" step="100000"
+                value={targetPrice} onChange={e => setTargetPrice(+e.target.value)}
+                className="w-full h-1.5 rounded-full appearance-none bg-slate-200 cursor-pointer" />
+              <div className="flex justify-between text-[10px] text-slate-300 mt-0.5">
+                <span>700萬</span><span>1000萬</span>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex justify-between items-center mb-1.5">
+                <label className="text-xs text-slate-500">現有物業預計售價</label>
+                <span className="font-semibold text-slate-700 text-sm">{fmt(sellPrice)}</span>
+              </div>
+              <input type="range" min="5500000" max="6500000" step="50000"
+                value={sellPrice} onChange={e => setSellPrice(+e.target.value)}
+                className="w-full h-1.5 rounded-full appearance-none bg-slate-200 cursor-pointer" />
+              <div className="flex justify-between text-[10px] text-slate-300 mt-0.5">
+                <span>550萬</span><span>650萬</span>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs text-slate-500 block mb-1.5">金價預測（每克 HKD）</label>
+              <div className="relative">
+                <input type="number" value={goldPrice}
+                  onChange={e => setGoldPrice(+e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50" />
+                <Coins className="absolute left-2.5 top-2.5 w-4 h-4 text-amber-400" />
+              </div>
+              <div className="text-xs text-slate-400 mt-1">
+                400克總值：<span className="font-semibold text-amber-600">{fmt(goldWeight * goldPrice)}</span>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs text-slate-500 block mb-1.5">一手樓回佣預估</label>
+              <select value={rebateRate} onChange={e => setRebateRate(+e.target.value)}
+                className="w-full p-2 border border-slate-200 rounded-xl text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-blue-500">
+                <option value={0}>0%（無回佣）</option>
+                <option value={1}>1.0%</option>
+                <option value={1.5}>1.5%（常見優質）</option>
+                <option value={2}>2.0%（進取）</option>
+              </select>
+              <div className="text-xs text-slate-400 mt-1">
+                預計到手：<span className="font-semibold text-emerald-600">+{fmt(r.developerRebate)}</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        {/* Staff Plan highlight */}
+        <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-5 rounded-2xl text-white shadow-md">
+          <h4 className="font-bold mb-3 flex items-center gap-2 text-sm">
+            <Zap className="w-4 h-4" /> Staff Plan 核心優勢
+          </h4>
+          <ul className="space-y-2 text-sm">
+            <li className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-300" />
+              利率鎖定 <span className="font-black ml-auto text-lg">0.8%</span>
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-300" />
+              月供中約 <span className="font-black ml-auto text-lg">85%</span> 為還本
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-300" />
+              vs 市場 3% — 每月慳 <span className="font-black ml-auto tabular-nums">{fmt(r.bankMonthlyPayment - r.newMonthlyPayment)}</span>
+            </li>
+          </ul>
+          <div className="mt-3 pt-3 border-t border-blue-500 text-xs text-blue-200">
+            30 年期總利息節省估計 {fmt((r.bankMonthlyPayment - r.newMonthlyPayment) * 360)}
+          </div>
+        </div>
+      </div>
+
+      {/* Right: Results */}
+      <div className="lg:col-span-2 space-y-5">
+
+        {/* KPI row */}
+        <div className="grid grid-cols-3 gap-3">
+          <Stat label="舊屋套現淨值" value={fmt(r.netFromSale)} />
+          <Stat label="總可用資金" value={fmt(r.totalAssets)} sub={`現金+黃金+套現`} />
+          <Stat label="Staff Plan 月供" value={fmt(r.newMonthlyPayment)} accent sub={`vs 市場 ${fmt(r.bankMonthlyPayment)}`} />
+        </div>
+
+        {/* Final Balance Hero */}
+        <div className={`rounded-3xl p-7 border-2 transition-all ${
+          surplus
+            ? 'bg-gradient-to-br from-emerald-50 to-white border-emerald-200'
+            : 'bg-gradient-to-br from-rose-50 to-white border-rose-200'
+        }`}>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+            <div>
+              <h2 className="text-lg font-bold mb-1 flex items-center gap-2">
+                {surplus
+                  ? <><CheckCircle2 className="text-emerald-500 w-5 h-5" /> 資金充裕，可以行動</>
+                  : <><AlertCircle className="text-rose-500 w-5 h-5" /> 仍有資金缺口</>}
+              </h2>
+              <p className="text-slate-500 text-xs">
+                首期 + 印花稅 + 雜費，扣除回佣後預計餘額
+              </p>
+            </div>
+            <div className={`text-4xl font-black tabular-nums ${surplus ? 'text-emerald-600' : 'text-rose-600'}`}>
+              {fmt(r.finalBalance)}
+            </div>
+          </div>
+
+          <button
+            onClick={() => setShowBreakdown(v => !v)}
+            className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 mb-4 transition-colors"
+          >
+            <ChevronDown className={`w-3 h-3 transition-transform ${showBreakdown ? 'rotate-180' : ''}`} />
+            {showBreakdown ? '收起' : '展開'} 詳細資金流
+          </button>
+
+          {showBreakdown && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-200">
+              <div>
+                <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                  <Coins className="w-3.5 h-3.5 text-amber-500" /> 資金來源
+                </h4>
+                <div className="space-y-0.5">
+                  <Row label="舊屋套現（扣代理費＋律師費）" value={fmt(r.netFromSale)} indent />
+                  <Row label="現有流動現金" value={fmt(currentCash)} indent />
+                  <Row label={`黃金現值（${goldWeight}g × $${goldPrice}`} value={fmt(r.goldValue)} indent />
+                  <div className="pt-2 mt-2 border-t border-slate-100 flex justify-between text-sm font-bold text-slate-800">
+                    <span>資金合計</span><span className="tabular-nums">{fmt(r.totalAssets)}</span>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                  <ArrowRightLeft className="w-3.5 h-3.5 text-blue-500" /> 換樓開支
+                </h4>
+                <div className="space-y-0.5">
+                  <Row label="30% 首期" value={fmt(r.downPayment)} indent />
+                  <Row label="從價印花稅" value={fmt(r.stampDuty)} indent />
+                  <Row label="律師費（估算）" value={fmt(15000)} indent />
+                  <Row label={`一手回佣 ${rebateRate}%（預估）`} value={`+${fmt(r.developerRebate)}`} highlight indent />
+                  <div className="pt-2 mt-2 border-t border-slate-100 flex justify-between text-sm font-bold text-slate-800">
+                    <span>淨需現金</span>
+                    <span className="tabular-nums">{fmt(r.totalPurchaseCost - r.developerRebate)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Monthly + Timing insights */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+            <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+              <DollarSign className="w-3.5 h-3.5 text-emerald-500" /> 月供對比
+            </h4>
+            <div className="space-y-2">
+              {[
+                { label: '現有月供', val: currentMonthly, color: 'text-slate-500' },
+                { label: 'Staff Plan (0.8%)', val: r.newMonthlyPayment, color: 'text-blue-600' },
+                { label: 'H/P 計劃 (~3.1%)', val: r.bankMonthlyPayment, color: 'text-orange-500' },
+              ].map(({ label, val, color }) => (
+                <div key={label} className="flex justify-between items-center text-sm">
+                  <span className="text-slate-500">{label}</span>
+                  <span className={`font-bold tabular-nums ${color}`}>{fmt(val)}</span>
+                </div>
+              ))}
+              <div className="pt-2 border-t border-slate-100 text-xs text-slate-400">
+                Staff vs 市場計劃差距：
+                <span className="font-semibold text-rose-500"> {fmt(r.bankMonthlyPayment - r.newMonthlyPayment)}/月</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+            <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-orange-400" /> 時機分析
+            </h4>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              {scenario === 'now'
+                ? '【立刻換】金價高位套現機會，及早入住三房。回佣可抵消印花稅大部分，資金缺口可控。'
+                : '【一年後換】0.8% 低息下一年約還本 12 萬，加上多儲 10 萬現金，資金儲備增加約 22 萬，換樓餘裕更足。'}
+            </p>
+            <div className="mt-3 pt-3 border-t border-slate-100 text-xs">
+              <span className="text-slate-400">月供增加（vs 現有）</span>
+              <span className="font-bold text-slate-800 ml-2">{fmt(r.newMonthlyPayment - currentMonthly)}/月</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    {/* Mortgage comparison */}
+    <MortgageComparison newLoan={r.newLoan} targetPrice={targetPrice} />
+
+    {/* Footer */}
+    <div className="text-center text-slate-400 text-xs pt-2 pb-4 border-t border-slate-200">
+      ⚠️ 以上計算僅供參考。印花稅、估價及回佣均為預算數值。H 計劃以 HIBOR 2.15% 估算；P 計劃以 5.625% 計算。實際操作請以銀行最終批核及律師樓文件為準。
+    </div>
+  </div>
+</div>
+```
+
+);
+}
